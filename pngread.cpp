@@ -4,7 +4,7 @@
 
 #include "zlibredux/zlib.h"
 
-#include <netinet/in.h>
+#include <netinet/in.h> // ntohl
 
 #include <vector>
 #include <fstream>
@@ -12,21 +12,6 @@
 #include <string>
 #include <algorithm>
 #include <cassert>
-#include <chrono>
-
-
-class Stopwatch {
-	std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
-
-public:
-	uint64_t lap_us() {
-		using namespace std::chrono;
-		auto n = high_resolution_clock::now();
-		auto us = duration_cast<microseconds>(n - start);
-		start = n;
-		return us.count();
-	}
-};
 
 
 struct ChunkHeader {
@@ -34,6 +19,7 @@ struct ChunkHeader {
 	uint32_t chunkType;
 };
 
+// WARNING: this assumes little-endian.
 constexpr uint32_t fourCharCode(char a, char b, char c, char d) {
 	return (d << 24) | (c << 16) | (b << 8) | a;
 }
@@ -168,7 +154,7 @@ class PNGFile {
 	}
 
 
-	void unfilterImage() {
+	void unfilterImage(uint8_t* imageDataPtr) {
 		// Reverse the filtering done by the PNG encoder program to restore the original image.
 		// See: http://www.fileformat.info/format/png/corion.htm for more info.
 
@@ -176,12 +162,12 @@ class PNGFile {
 			return (a + b) & 0xff;
 		};
 
-		auto rowPtr = imageData_.data();
+		auto rowPtr = imageDataPtr;
 		auto rowBytes = width_ * bpp_;
 		auto rowPitch = rowBytes + 1;
 
 		for (auto lineIx = 0u; lineIx < height_; ++lineIx) {
-			LineFilter filter = (LineFilter)(*rowPtr++);
+			LineFilter filter = (LineFilter)(*rowPtr++); // note the ++ where we skip past the filter byte
 			assert((uint32_t)filter < 5);
 
 			auto row = rowPtr;
@@ -282,7 +268,6 @@ class PNGFile {
 
 public:
 	PNGFile(const std::string& resourcePath) {
-		Stopwatch timer;
 		std::ifstream png { resourcePath, std::ios::binary };
 
 		uint8_t realSig[8], expectedSig[8] = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
@@ -291,14 +276,11 @@ public:
 
 		while (png)
 			nextChunk(png);
-		std::cout << "chunks  : " << timer.lap_us() << " us\n";
 
 		imageData_.resize((rowBytes() + 1) * height());
 		inflateBuffer(compressedData_, imageData_);
-		std::cout << "inflate : " << timer.lap_us() << " us\n";
 
-		unfilterImage();
-		std::cout << "unfilter: " << timer.lap_us() << " us\n";
+		unfilterImage(imageData_.data());
 	}
 
 	uint32_t width() const { return width_; }
@@ -312,8 +294,13 @@ public:
 };
 
 
-int main() {
-	PNGFile png { "main.png" };
+int main(int argc, char* argv[]) {
+	if (argc != 2) {
+		std::cout << "no filename specified.\n";
+		return -1;
+	}
+
+	PNGFile png { argv[1] };
 	std::ofstream out { "out.raw", std::ios::out | std::ios::binary };
 
 	for (int32_t row = 0; row < png.height(); ++row) {
