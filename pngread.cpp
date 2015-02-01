@@ -113,7 +113,7 @@ class PNGFile {
 		png.read(reinterpret_cast<char*>(&chdr), sizeof(ChunkHeader));
 		chdr.dataSize = ntohl(chdr.dataSize);
 
-		auto typeName = std::string { reinterpret_cast<char*>(&chdr.chunkType), reinterpret_cast<char*>(&chdr.chunkType) + 4 };
+		// auto typeName = std::string { reinterpret_cast<char*>(&chdr.chunkType), reinterpret_cast<char*>(&chdr.chunkType) + 4 };
 		// std::cout << "Chunk: " << typeName << '\n';
 		// std::cout << "Size : " << chdr.dataSize << '\n';
 
@@ -128,9 +128,9 @@ class PNGFile {
 				std::cout << "Height: " << height_ << '\n';
 				std::cout << "Bits  : " << (int)ihdr.BitDepth << '\n';
 				std::cout << "Kind  : " << (int)ihdr.ColorType << '\n';
-				std::cout << "Compression : " << (int)ihdr.Compression << '\n';
-				std::cout << "Filter : " << (int)ihdr.Filter << '\n';
-				std::cout << "Interlace : " << (int)ihdr.Interlace << '\n';
+				// std::cout << "Compression : " << (int)ihdr.Compression << '\n';
+				// std::cout << "Filter : " << (int)ihdr.Filter << '\n';
+				// std::cout << "Interlace : " << (int)ihdr.Interlace << '\n';
 
 				assert(ihdr.BitDepth == 8);
 				assert((ColorType)ihdr.ColorType != ColorType::Palette);
@@ -166,6 +166,7 @@ class PNGFile {
 		// skip crc
 		png.seekg(4, std::ios::cur);
 	}
+
 
 	void unfilterImage() {
 		// Reverse the filtering done by the PNG encoder program to restore the original image.
