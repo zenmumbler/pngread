@@ -1,5 +1,6 @@
 # pngread
-A small PNG file reader implementation aimed at game dev
+A small PNG file reader implementation aimed at game dev.<br>
+(c) 2015 by Arthur Langereis (@zenmumbler)
 
 This implements a functional but limited PNG file loader _without_ using libpng.
 
@@ -45,6 +46,10 @@ PNG formats. You will want to modify things to fit in your project.
 
 I use a modified version of this code in my [stardazed game library](http://github.com/zenmumbler/stardazed/)
 
-## Acknowledgements
+## License and Acknowledgements
+
+You can use, modify and incorporate the code in the pngread.cpp file in your own projects,
+commercial or not, freely. If you do use a (modified) version of the code in pngread.cpp,
+then I ask you credit me by my name and twitter handler as on the top of this file.
 
 zlib is Copyright (C) 1995-2013 Jean-loup Gailly and Mark Adler, see http://zlib.net/

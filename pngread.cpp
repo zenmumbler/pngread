@@ -1,4 +1,8 @@
-#include "zlib.h"
+// pngread.cpp - (c) 2015 by Arthur Langereis (@zenmumbler)
+// this file is hosted at: http://github.com/zenmumbler/pngread
+// for license and info, go there.
+
+#include "zlibredux/zlib.h"
 
 #include <netinet/in.h>
 
@@ -23,6 +27,7 @@ public:
 		return us.count();
 	}
 };
+
 
 struct ChunkHeader {
 	uint32_t dataSize;
@@ -49,6 +54,8 @@ enum class ColorType : uint8_t {
 };
 
 
+// for MSVC, remove the __attribute__ thing wrap this struct
+// in pragma pack (push, 1) and pragma pack (pop) 
 struct IHDRChunk {
 	uint32_t Width;        // Width of image in pixels
 	uint32_t Height;       // Height of image in pixels
@@ -59,10 +66,14 @@ struct IHDRChunk {
 	uint8_t Interlace;     // Type of interlacing scheme used
 } __attribute__((__packed__));
 
-static_assert(sizeof(IHDRChunk) == 13, "bleh");
+static_assert(sizeof(IHDRChunk) == 13, "");
 
 
 int inflateBuffer(const std::vector<uint8_t>& source, std::vector<uint8_t>& dest) {
+	// WARNING: this usage of inflate is specialized for this use case.
+	// We know the expanded size up front and pass in the fully allocated
+	// in and out buffers and thus only need a single inflate() call, see
+	// http://zlib.net/zpipe.c for a full, compatible version of this.
 	z_stream strm;
 	strm.zalloc = nullptr;
 	strm.zfree = nullptr;
@@ -147,6 +158,7 @@ class PNGFile {
 			}
 
 			default:
+				// unsupported chunks are ignored
 				png.seekg(chdr.dataSize, std::ios::cur);
 				break;
 		}
@@ -156,6 +168,9 @@ class PNGFile {
 	}
 
 	void unfilterImage() {
+		// Reverse the filtering done by the PNG encoder program to restore the original image.
+		// See: http://www.fileformat.info/format/png/corion.htm for more info.
+
 		auto addv = [](uint32_t a, uint32_t b) {
 			return (a + b) & 0xff;
 		};
@@ -280,6 +295,7 @@ public:
 		imageData_.resize((rowBytes() + 1) * height());
 		inflateBuffer(compressedData_, imageData_);
 		std::cout << "inflate : " << timer.lap_us() << " us\n";
+
 		unfilterImage();
 		std::cout << "unfilter: " << timer.lap_us() << " us\n";
 	}
